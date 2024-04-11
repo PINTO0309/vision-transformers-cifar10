@@ -136,3 +136,7 @@ data/
 latest-run
 wandb-metadata.json
 wandb-summary.json
+*.onnx
+*.engine
+*.profile
+saved_model/

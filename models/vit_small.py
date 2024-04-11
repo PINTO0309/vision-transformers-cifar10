@@ -57,8 +57,15 @@ class LSA(nn.Module):
 
         dots = torch.matmul(q, k.transpose(-1, -2)) * self.temperature.exp()
 
-        mask = torch.eye(dots.shape[-1], device = dots.device, dtype = torch.bool)
-        mask_value = -torch.finfo(dots.dtype).max
+        # mask = torch.eye(dots.shape[-1], device = dots.device, dtype = torch.bool)
+        # mask_value = -torch.finfo(dots.dtype).max
+        # dots = dots.masked_fill(mask, mask_value)
+        n = dots.shape[-1]
+        device = dots.device
+        dtype = dots.dtype
+        indices = torch.arange(n, device=device)
+        mask = indices.expand(n, n) == indices.expand(n, n).t()
+        mask_value = -torch.finfo(dtype).max
         dots = dots.masked_fill(mask, mask_value)
 
         attn = self.attend(dots)

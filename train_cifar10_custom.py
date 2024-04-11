@@ -3,6 +3,39 @@
 
 Train Custom Dataset with PyTorch and Vision Transformers!
 
+# train
+python train_cifar10_custom.py --net vit_small --n_epochs 200 --custom
+python train_cifar10_custom.py --net vit_tiny --n_epochs 200 --custom
+python train_cifar10_custom.py --net vit_nano --n_epochs 200 --custom
+
+# export onnx
+python train_cifar10_custom.py \
+--net vit_nano \
+--ckpt_path checkpoint/vit_nano-4-ckpt-99-202.t7 \
+--export_onnx \
+--custom
+
+# optimization
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 1
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 2
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 3
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 4
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 5
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 6
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 7
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 8
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 9
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 10
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 11
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 12
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 13
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 14
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 15
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 16
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 17
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 18
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 19
+sit4onnx -if vit_nano_Nx3x32x32.onnx -b 20
 '''
 
 from __future__ import print_function
@@ -50,6 +83,8 @@ parser.add_argument('--n_epochs', type=int, default='200')
 parser.add_argument('--patch', default='4', type=int, help="patch for ViT")
 parser.add_argument('--dimhead', default="512", type=int)
 parser.add_argument('--convkernel', default='8', type=int, help="parameter for convmixer")
+parser.add_argument('--export_onnx', action='store_true', help='export onnx')
+parser.add_argument('--ckpt_path', default='')
 args = parser.parse_args()
 
 class CustomDataset(Dataset):
@@ -96,9 +131,20 @@ def list_directories(path):
             directories.append(item)
     return sorted(directories)
 
+class FinalModel(nn.Module):
+    def __init__(self, model):
+        super(FinalModel, self).__init__()
+        self.base_model = model
+
+    def forward(self, x):
+        eff_out: torch.Tensor = self.base_model(x)
+        return torch.argmax(eff_out, axis=1).to(torch.bool)
+
 # take in args
 custom: bool = args.custom
-usewandb = ~args.nowandb
+export_onnx: bool = args.export_onnx
+ckpt_path: str = args.ckpt_path
+usewandb = not args.nowandb and not args.export_onnx
 if usewandb:
     import wandb
     watermark = "{}_lr{}".format(args.net, args.lr)
@@ -288,6 +334,72 @@ elif args.net=="swin":
     net = swin_t(window_size=args.patch,
                 num_classes=n_classes,
                 downscaling_factors=(2,2,2,1))
+
+if export_onnx:
+    checkpoint = torch.load(ckpt_path)
+    net.load_state_dict(checkpoint['model'])
+    net = FinalModel(net)
+    net.cuda()
+    net.eval()
+    import onnx
+    from onnxsim import simplify
+    RESOLUTION = [
+        [32,32],
+    ]
+    MODEL = f'vit_nano'
+    for H, W in RESOLUTION:
+        onnx_file = f"{MODEL}_1x3x{H}x{W}.onnx"
+        x = torch.randn(1, 3, H, W).cuda()
+        torch.onnx.export(
+            net,
+            args=(x),
+            f=onnx_file,
+            opset_version=11,
+            input_names=['input'],
+            output_names=['output'],
+        )
+        model_onnx1 = onnx.load(onnx_file)
+        model_onnx1 = onnx.shape_inference.infer_shapes(model_onnx1)
+        onnx.save(model_onnx1, onnx_file)
+
+        model_onnx2 = onnx.load(onnx_file)
+        model_simp, check = simplify(model_onnx2)
+        onnx.save(model_simp, onnx_file)
+        model_onnx2 = onnx.load(onnx_file)
+        model_simp, check = simplify(model_onnx2)
+        onnx.save(model_simp, onnx_file)
+        model_onnx2 = onnx.load(onnx_file)
+        model_simp, check = simplify(model_onnx2)
+        onnx.save(model_simp, onnx_file)
+
+    onnx_file = f"{MODEL}_Nx3x{H}x{W}.onnx"
+    x = torch.randn(1, 3, 32, 32).cuda()
+    torch.onnx.export(
+        net,
+        args=(x),
+        f=onnx_file,
+        opset_version=11,
+        input_names=['input'],
+        output_names=['output'],
+        dynamic_axes={
+            'input' : {0: 'batch'},
+            'output' : {0: 'batch'},
+        }
+    )
+    model_onnx1 = onnx.load(onnx_file)
+    model_onnx1 = onnx.shape_inference.infer_shapes(model_onnx1)
+    onnx.save(model_onnx1, onnx_file)
+
+    model_onnx2 = onnx.load(onnx_file)
+    model_simp, check = simplify(model_onnx2)
+    onnx.save(model_simp, onnx_file)
+    model_onnx2 = onnx.load(onnx_file)
+    model_simp, check = simplify(model_onnx2)
+    onnx.save(model_simp, onnx_file)
+    model_onnx2 = onnx.load(onnx_file)
+    model_simp, check = simplify(model_onnx2)
+    onnx.save(model_simp, onnx_file)
+    exit(0)
 
 # For Multi-GPU
 if 'cuda' in device:
