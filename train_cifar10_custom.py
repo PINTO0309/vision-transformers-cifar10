@@ -169,19 +169,38 @@ if args.net=="vit_timm":
 else:
     size = imsize
 
-transform_train = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
-    transforms.Resize(size),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
+transform_train = None
+transform_test = None
 
-transform_test = transforms.Compose([
-    transforms.Resize(size),
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-])
+if not custom:
+    transform_train = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.Resize(size),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+
+    transform_test = transforms.Compose([
+        transforms.Resize(size),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+else:
+    transform_train = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.Resize(size),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+    ])
+
+    transform_test = transforms.Compose([
+        transforms.Resize(size),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+    ])
+
 
 # Add RandAugment with N, M(hyperparameter)
 if aug:
@@ -344,7 +363,7 @@ if export_onnx:
     import onnx
     from onnxsim import simplify
     RESOLUTION = [
-        [32,32],
+        [32, 32],
     ]
     MODEL = f'vit_nano'
     for H, W in RESOLUTION:
@@ -361,7 +380,6 @@ if export_onnx:
         model_onnx1 = onnx.load(onnx_file)
         model_onnx1 = onnx.shape_inference.infer_shapes(model_onnx1)
         onnx.save(model_onnx1, onnx_file)
-
         model_onnx2 = onnx.load(onnx_file)
         model_simp, check = simplify(model_onnx2)
         onnx.save(model_simp, onnx_file)
@@ -482,9 +500,11 @@ def test(epoch):
     acc = 100.*correct/total
     if acc > best_acc:
         print('Saving..')
-        state = {"model": net.state_dict(),
-              "optimizer": optimizer.state_dict(),
-              "scaler": scaler.state_dict()}
+        state = {
+            "model": net.state_dict(),
+            "optimizer": optimizer.state_dict(),
+            "scaler": scaler.state_dict()
+        }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
         torch.save(state, './checkpoint/'+args.net+'-{}-ckpt.t7'.format(args.patch))
