@@ -212,6 +212,19 @@ elif args.net=="vit_tiny":
     dropout = 0.1,
     emb_dropout = 0.1
 )
+elif args.net=="vit_nano":
+    from models.vit_small import ViT
+    net = ViT(
+    image_size = size,
+    patch_size = args.patch,
+    num_classes = n_classes,
+    dim = int(args.dimhead),
+    depth = 2,
+    heads = 4,
+    mlp_dim = 128,
+    dropout = 0.1,
+    emb_dropout = 0.1
+)
 elif args.net=="simplevit":
     from models.simplevit import SimpleViT
     net = SimpleViT(
