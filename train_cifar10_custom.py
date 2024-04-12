@@ -15,6 +15,19 @@ python train_cifar10_custom.py \
 --export_onnx \
 --custom
 
+python train_cifar10_custom.py \
+--net vit_tiny \
+--ckpt_path checkpoint/vit_tiny-4-ckpt-99-745.t7 \
+--export_onnx \
+--custom
+
+python train_cifar10_custom.py \
+--net vit_small \
+--ckpt_path checkpoint/vit_small-4-ckpt-99-853.t7 \
+--export_onnx \
+--custom
+
+
 # optimization
 sit4onnx -if vit_nano_Nx3x32x32.onnx -b 1
 sit4onnx -if vit_nano_Nx3x32x32.onnx -b 2
@@ -36,6 +49,48 @@ sit4onnx -if vit_nano_Nx3x32x32.onnx -b 17
 sit4onnx -if vit_nano_Nx3x32x32.onnx -b 18
 sit4onnx -if vit_nano_Nx3x32x32.onnx -b 19
 sit4onnx -if vit_nano_Nx3x32x32.onnx -b 20
+
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 1
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 2
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 3
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 4
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 5
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 6
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 7
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 8
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 9
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 10
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 11
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 12
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 13
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 14
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 15
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 16
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 17
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 18
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 19
+sit4onnx -if vit_tiny_Nx3x32x32.onnx -b 20
+
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 1
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 2
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 3
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 4
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 5
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 6
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 7
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 8
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 9
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 10
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 11
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 12
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 13
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 14
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 15
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 16
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 17
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 18
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 19
+sit4onnx -if vit_small_Nx3x32x32.onnx -b 20
 '''
 
 from __future__ import print_function
@@ -365,7 +420,7 @@ if export_onnx:
     RESOLUTION = [
         [32, 32],
     ]
-    MODEL = f'vit_nano'
+    MODEL = f'vit_small'
     for H, W in RESOLUTION:
         onnx_file = f"{MODEL}_1x3x{H}x{W}.onnx"
         x = torch.randn(1, 3, H, W).cuda()
